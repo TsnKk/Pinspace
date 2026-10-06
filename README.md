@@ -1,26 +1,69 @@
-# Pinspace
+# Pinspace — Local Web App
 
-A private visual workspace for images, reference notes, tags, and movable cards. Thai interface with multiple canvases, zoom, image uploads, text notes, metadata editing and tag filters.
+เว็บแคนวาสรูปและโน้ตที่รันบนเครื่องของคุณ ไม่ต้องล็อกอิน ไม่ต้องใช้บริการคลาวด์
 
-## Stack
-React + Vinext on Cloudflare Workers. D1 stores canvases and card metadata; R2 stores image bytes. Every read and write is scoped to the signed-in user through Sites authentication. No user content is stored in browser storage.
+## เปิดใช้งานบน Windows
 
-## Development
-- Node 22.13 or newer
-- Install: npm run install:ci
-- Run: npm run dev
-- Local sign-in: /signin-with-chatgpt?return_to=/
-- Build: npm run build
-- Type check: node node_modules/typescript/bin/tsc --noEmit
+1. ติดตั้ง Node.js 22.13 ขึ้นไป (เครื่องนี้มีแล้ว)
+2. ดับเบิลคลิก **Start Pinspace.cmd**
+3. เปิด **http://127.0.0.1:3000**
+4. เปิดหน้าต่างคำสั่งค้างไว้ขณะใช้แอป กด Ctrl+C เพื่อหยุด
 
-Generate schema migrations with npm run db:generate. After the initial build, apply pending local migrations with the Wrangler command documented in the Sites skill. Production migrations are applied by Sites publishing.
+หรือใช้ terminal:
+```powershell
+cd C:\Users\Tanachai\Projects\pinspace
+npm run dev
+```
 
-## Validation
-scripts/smoke-test.mjs tests the local API: authentication, uploads, image read/delete, metadata, movement, tags, input rejection, canvas separation, and read-back.
-scripts/ui-test.mjs tests local UI workflows with the bundled Playwright runtime and Edge. Its runtime path is specific to this workstation. UI test images are under ignored outputs/.
+ติดตั้งแพ็กเกจครั้งแรกด้วย npm ci หากยังไม่มี node_modules หลังติดตั้งแล้วใช้งานได้โดยไม่ต้องเชื่อมอินเทอร์เน็ต (ลิงก์อ้างอิงภายนอกยังต้องใช้อินเทอร์เน็ต)
 
-Images: JPG, PNG, WebP and GIF, up to 10 MB each. Canvas names: 100 characters. Card titles: 120 characters. Descriptions: 10,000 characters. References: 2,000 characters. Up to 20 tags per card, 40 characters per tag.
+## ข้อมูลอยู่ที่ไหน
 
-Mouse/touch: drag using the image or card header. Click a card to edit details. Keyboard: focus the card header, then use arrows to move by 10 pixels (Shift: 40); Enter opens details. Changes to details use an explicit Save button; moving cards is saved on release.
+- โน้ต แคนวาส แท็ก และตำแหน่ง: data/pinspace.sqlite
+- รูปภาพและชนิดไฟล์: data/images/
+- สำรองข้อมูล: ปิดแอป แล้วคัดลอกโฟลเดอร์ data ทั้งโฟลเดอร์
+- ย้ายเครื่อง: คัดลอกโปรเจกต์กับ data ติดตั้งแพ็กเกจ แล้วเปิดเหมือนเดิม
+- ห้ามลบโฟลเดอร์ data หากต้องการเก็บรูปและโน้ต
+- เปลี่ยนที่เก็บได้ด้วยตัวแปร PINSPACE_DATA_DIR ก่อนเริ่มเซิร์ฟเวอร์
 
-WebMCP tools list_canvases and create_canvas are feature-detected and share the same application API. Registry integration, valid creation, and invalid input were tested with a browser registry harness.
+แอปฟังเฉพาะ 127.0.0.1 และตรวจคำขอให้มาจากเครื่องนี้ รูปที่เพิ่มในเวอร์ชันนี้เก็บในเครื่อง ไม่ส่งไปยังเว็บไซต์ที่เคยเผยแพร่ไว้
+
+## ฟังก์ชัน
+
+อัปโหลด JPG, PNG, WebP, GIF สูงสุด 10 MB ต่อรูป; ลากการ์ด; เพิ่มโน้ต; ชื่อ/รายละเอียด/พาเลตสี/แท็ก; หลายแคนวาส; กรองแท็ก; ย่อ–ขยาย
+
+ลากที่รูปหรือแถบด้านบนของการ์ด คลิกเพื่อแก้รายละเอียด แล้วกดบันทึก ตำแหน่งบันทึกหลังปล่อยเมาส์ รองรับปุ่มลูกศรเมื่อโฟกัสหัวการ์ด (Shift เพื่อขยับระยะมากขึ้น)
+
+## Build / ตรวจสอบ
+
+- npm run build
+- npm start (ต้อง build ก่อน)
+- npm run typecheck
+- npm run test:local (ใช้ฐานข้อมูลทดสอบแยก ไม่แตะ data ของคุณ)
+
+Next.js + React, Node.js SQLite และไฟล์ภาพบนดิสก์ สคริปต์ dev/build/start ใช้เฉพาะระบบ local โฟลเดอร์ .openai, build และ .wrangler ที่เหลือเป็นไฟล์ของเวอร์ชันเดิมและไม่ถูกใช้โดยคำสั่ง local
+
+
+## ฟังก์ชันเพิ่มเติม
+- ปุ่มถังขยะข้างชื่อแคนวาส: ยืนยันก่อนลบทั้งแคนวาส รวมรูปบนดิสก์และโน้ตภายใน
+- ปุ่มพระจันทร์/พระอาทิตย์มุมขวาบน: สลับโหมดมืด/สว่าง และจำค่าบนเบราว์เซอร์
+- ปุ่มเพิ่มข้อความ: ข้อความอิสระไม่มีพื้นการ์ด ลากหรือใช้ลูกศรจัดตำแหน่งได้
+- ปุ่มเพิ่มโน้ต: ยังคงสร้างการ์ดโน้ตสีเหลืองได้เหมือนเดิม
+
+## เปิดแอปซ้ำ / พอร์ตถูกใช้งาน
+ตัวเปิดแอปจะตรวจพอร์ตที่กำหนดก่อนเริ่ม หาก Pinspace เปิดอยู่แล้ว จะแสดงลิงก์ของตัวเดิมและไม่สร้างเซิร์ฟเวอร์ซ้ำ หากเป็นโปรแกรมอื่น จะไม่ปิดโปรแกรมนั้น และจะแจ้งให้เลือกพอร์ตอื่น
+
+## พาเลตสีจากรูป
+รูปแต่ละใบมีพาเลต 6 สีที่ดึงจากภาพโดยอัตโนมัติ ทั้งใต้การ์ดและในหน้ารายละเอียด คลิกเพื่อคัดลอก HEX คำนวณในเบราว์เซอร์บนเครื่อง ไม่ส่งรูปออกภายนอก รูปเก่าจะมีพาเลตเมื่อเปิดแคนวาสเช่นกัน ภาพที่มีน้อยกว่า 6 สีจะแสดงสีเดิมซ้ำให้ครบ ส่วนภาพโปร่งใสทั้งหมดจะแจ้งว่าไม่มีสีให้ดึง
+
+โหมดเริ่มต้นเป็นโหมดมืด หากเคยเลือกธีมไว้แล้วจะใช้ค่าที่เลือก และยังสลับธีมได้
+
+## เลือกหลายรายการ จัดระเบียบ และล็อก
+- ลากบนพื้นที่ว่างเพื่อสร้างกรอบเลือกหลายรูป/การ์ด แล้วลากรูปหรือหัวการ์ดใบใดใบหนึ่งเพื่อย้ายทั้งกลุ่ม
+- Shift หรือ Ctrl พร้อมคลิกที่รูป/หัวการ์ด เพื่อเพิ่มหรือลดรายการที่เลือก
+- ปุ่มรูปมือด้านล่างสลับไปเลื่อนแคนวาส ใช้ปุ่มเมาส์กลางลากได้เช่นกัน
+- แท็บจัดระเบียบ: เรียงตาราง แนวนอน หรือแนวตั้ง โดยใช้รายการที่เลือก หรือทุกรายการที่แสดงเมื่อยังไม่ได้เลือก
+- ปุ่มแม่กุญแจบนการ์ดล็อกเฉพาะตำแหน่ง รายละเอียดยังแก้ไขได้ ล็อก/ปลดล็อกหลายรายการได้จากแถบเครื่องมือ
+- ตำแหน่งของการ์ดที่ล็อกไม่เปลี่ยนเมื่อย้ายเป็นกลุ่มหรือจัดระเบียบ และจำสถานะหลังเปิดแอปใหม่
+- ปุ่มลูกศรมุมขวาบนพับแถบเครื่องมือขึ้น กดอีกครั้งเพื่อเปิดกลับ
+- พาเลตในรายละเอียดอยู่ใต้แท็ก เป็นแถบเล็ก 6 สีต่อกัน คลิกคัดลอก HEX ได้เหมือนเดิม
