@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+const origin='http://127.0.0.1:5173';
+const login=await fetch(origin+'/signin-with-chatgpt?return_to=/',{redirect:'manual'});
+const cookie=login.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');
+async function request(body,expected=200){const r=await fetch(origin+'/api/workspace',{method:body?'POST':'GET',headers:{Cookie:cookie,...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{})},body:body?(body instanceof FormData?body:JSON.stringify(body)):undefined});assert.equal(r.status,expected,await r.clone().text());return r.json();}
+const anonymous=await fetch(origin+'/api/workspace');assert.equal(anonymous.status,401);
+const b=(await request({action:'createBoard',name:'QA — รูปและโน้ต'})).board;
+const b2=(await request({action:'createBoard',name:'QA — แคนวาสที่สอง'})).board;
+const n=(await request({action:'createNote',id:b.id,x:70,y:95})).card;
+await request({action:'updateCard',id:n.id,title:'ชื่อภาษาไทย',description:'รายละเอียดหลายบรรทัด\nทดสอบการบันทึก',reference:'https://example.com/reference',tags:['ไอเดีย','สีฟ้า']});
+await request({action:'moveCard',id:n.id,x:410,y:260});
+await request({action:'moveCard',id:n.id,x:-1,y:0},400);
+await request({action:'updateCard',id:n.id,title:'',description:'',reference:'',tags:[]},400);
+await request({action:'createNote',id:'missing-board',x:0,y:0},404);
+let f=new FormData();f.set('file',new File([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')],'test.png',{type:'image/png'}));f.set('boardId',b.id);f.set('x','120');f.set('y','40');
+const im=(await request(f)).card;
+const image=await fetch(origin+im.image,{headers:{Cookie:cookie}});assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/png');assert.ok((await image.arrayBuffer()).byteLength>50);
+const denied=await fetch(origin+im.image);assert.equal(denied.status,401);
+f=new FormData();f.set('file',new File(['not an image'],'fake.png',{type:'image/png'}));f.set('boardId',b.id);await request(f,400);
+const d=await request();const saved=d.cards.find(c=>c.id===n.id);assert.equal(saved.title,'ชื่อภาษาไทย');assert.equal(saved.x,410);assert.equal(saved.y,260);assert.deepEqual(saved.tags,['ไอเดีย','สีฟ้า']);assert.equal(d.cards.filter(c=>c.board_id===b2.id).length,0);
+await request({action:'renameBoard',id:b2.id,name:'ชื่อแคนวาสใหม่'});assert.equal((await request()).boards.find(v=>v.id===b2.id).name,'ชื่อแคนวาสใหม่');
+await request({action:'deleteCard',id:im.id});assert.equal((await fetch(origin+im.image,{headers:{Cookie:cookie}})).status,404);await request({action:'deleteCard',id:n.id});
+console.log('PASS: auth, image upload/read/delete, invalid upload, notes, metadata, movement, validation, tags, canvas separation, rename, durable read-back.');
